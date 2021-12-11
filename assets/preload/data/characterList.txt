@@ -1,11 +1,14 @@
 bf
+asriel
 dad
 gf
+bfdark
 spooky
 pico
 mom
 mom-car
 bf-car
+bfBackwards
 gf-car
 parents-christmas
 monster-christmas
@@ -19,3 +22,6 @@ senpai-angry
 spirit
 bf-pixel-opponent
 pico-player
+sans
+asriel
+flowey
