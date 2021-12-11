@@ -19,13 +19,13 @@ import flixel.FlxSprite;
 import flixel.FlxCamera;
 import flixel.util.FlxColor;
 import flixel.FlxBasic;
+#if sys
+import sys.FileSystem;
+import sys.io.File;
+#end
 import Type.ValueType;
 import Controls;
 import DialogueBoxPsych;
-
-#if desktop
-import Discord;
-#end
 
 using StringTools;
 
@@ -180,9 +180,6 @@ class EditorLua {
 				return;
 			}
 		});
-
-		//Discord.DiscordClient.addLuaCallbacks(lua);
-
 		call('onCreate', []);
 		#end
 	}

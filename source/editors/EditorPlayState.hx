@@ -49,9 +49,6 @@ class EditorPlayState extends MusicBeatState
 	}
 
 	var scoreTxt:FlxText;
-	var stepTxt:FlxText;
-	var beatTxt:FlxText;
-	
 	var timerToStart:Float = 0;
 	private var noteTypeMap:Map<String, Bool> = new Map<String, Bool>();
 	override function create()
@@ -94,7 +91,18 @@ class EditorPlayState extends MusicBeatState
 			vocals = new FlxSound();
 
 		generateSong(PlayState.SONG.song);
-
+		#if LUA_ALLOWED
+		for (notetype in noteTypeMap.keys()) {
+			var luaToLoad:String = Paths.modFolders('custom_notetypes/' + notetype + '.lua');
+			if(sys.FileSystem.exists(luaToLoad)) {
+				var lua:editors.EditorLua = new editors.EditorLua(luaToLoad);
+				new FlxTimer().start(0.1, function (tmr:FlxTimer) {
+					lua.stop();
+					lua = null;
+				});
+			}
+		}
+		#end
 		noteTypeMap.clear();
 		noteTypeMap = null;
 
@@ -104,18 +112,6 @@ class EditorPlayState extends MusicBeatState
 		scoreTxt.borderSize = 1.25;
 		scoreTxt.visible = !ClientPrefs.hideHud;
 		add(scoreTxt);
-		
-		beatTxt = new FlxText(10, 610, FlxG.width, "Beat: 0", 20);
-		beatTxt.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		beatTxt.scrollFactor.set();
-		beatTxt.borderSize = 1.25;
-		add(beatTxt);
-
-		stepTxt = new FlxText(10, 640, FlxG.width, "Step: 0", 20);
-		stepTxt.setFormat(Paths.font("vcr.ttf"), 20, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		stepTxt.scrollFactor.set();
-		stepTxt.borderSize = 1.25;
-		add(stepTxt);
 
 		var tipText:FlxText = new FlxText(10, FlxG.height - 24, 0, 'Press ESC to Go Back to Chart Editor', 16);
 		tipText.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
@@ -446,8 +442,6 @@ class EditorPlayState extends MusicBeatState
 
 		keyShit();
 		scoreTxt.text = 'Hits: ' + songHits + ' | Misses: ' + songMisses;
-		beatTxt.text = 'Beat: ' + curBeat;
-		stepTxt.text = 'Step: ' + curStep;
 		super.update(elapsed);
 	}
 
@@ -582,6 +576,25 @@ class EditorPlayState extends MusicBeatState
 		{
 			switch(note.noteType) {
 				case 'Hurt Note': //Hurt note
+					noteMiss(note.noteData);
+					--songMisses;
+					if(!note.isSustainNote) {
+						if(!note.noteSplashDisabled) {
+							spawnNoteSplashOnNote(note);
+						}
+					}
+
+					note.wasGoodHit = true;
+					vocals.volume = 0;
+
+					if (!note.isSustainNote)
+					{
+						note.kill();
+						notes.remove(note, true);
+						note.destroy();
+					}
+					return;
+				case 'Sans Note': //Hurt note
 					noteMiss(note.noteData);
 					--songMisses;
 					if(!note.isSustainNote) {

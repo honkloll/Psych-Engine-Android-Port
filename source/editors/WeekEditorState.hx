@@ -27,6 +27,10 @@ import openfl.events.IOErrorEvent;
 import flash.net.FileFilter;
 import lime.system.Clipboard;
 import haxe.Json;
+#if sys
+import sys.io.File;
+import sys.FileSystem;
+#end
 import WeekData;
 
 using StringTools;
@@ -111,10 +115,6 @@ class WeekEditorState extends MusicBeatState
 
 		FlxG.mouse.visible = true;
 
-		#if mobileC
-		addVirtualPad(NONE, A);
-		#end
-
 		super.create();
 	}
 
@@ -135,6 +135,13 @@ class WeekEditorState extends MusicBeatState
 		
 		UI_box.selected_tab_id = 'Week';
 		add(UI_box);
+
+		var loadWeekButton:FlxButton = new FlxButton(0, 650, "Load Week", function() {
+			loadWeek();
+		});
+		loadWeekButton.screenCenter(X);
+		loadWeekButton.x -= 120;
+		add(loadWeekButton);
 		
 		var freeplayButton:FlxButton = new FlxButton(0, 650, "Freeplay", function() {
 			MusicBeatState.switchState(new WeekEditorFreeplayState(weekFile));
@@ -170,34 +177,26 @@ class WeekEditorState extends MusicBeatState
 		tab_group.name = "Week";
 		
 		songsInputText = new FlxUIInputText(10, 30, 200, '', 8);
-		songsInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
 		blockPressWhileTypingOn.push(songsInputText);
 
 		opponentInputText = new FlxUIInputText(10, songsInputText.y + 40, 70, '', 8);
-		opponentInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
 		blockPressWhileTypingOn.push(opponentInputText);
 		boyfriendInputText = new FlxUIInputText(opponentInputText.x + 75, opponentInputText.y, 70, '', 8);
-		boyfriendInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
 		blockPressWhileTypingOn.push(boyfriendInputText);
 		girlfriendInputText = new FlxUIInputText(boyfriendInputText.x + 75, opponentInputText.y, 70, '', 8);
-		girlfriendInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
 		blockPressWhileTypingOn.push(girlfriendInputText);
 
 		backgroundInputText = new FlxUIInputText(10, opponentInputText.y + 40, 120, '', 8);
-		backgroundInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
 		blockPressWhileTypingOn.push(backgroundInputText);
 		
 
 		displayNameInputText = new FlxUIInputText(10, backgroundInputText.y + 60, 200, '', 8);
-		displayNameInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
 		blockPressWhileTypingOn.push(backgroundInputText);
 
 		weekNameInputText = new FlxUIInputText(10, displayNameInputText.y + 60, 150, '', 8);
-		weekNameInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
 		blockPressWhileTypingOn.push(weekNameInputText);
 
 		weekFileInputText = new FlxUIInputText(10, weekNameInputText.y + 40, 100, '', 8);
-		weekFileInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
 		blockPressWhileTypingOn.push(weekFileInputText);
 		reloadWeekThing();
 
@@ -242,7 +241,6 @@ class WeekEditorState extends MusicBeatState
 		};
 
 		weekBeforeInputText = new FlxUIInputText(10, lockedCheckbox.y + 55, 100, '', 8);
-		weekBeforeInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;		
 		blockPressWhileTypingOn.push(weekBeforeInputText);
 		
 		tab_group.add(new FlxText(weekBeforeInputText.x, weekBeforeInputText.y - 28, 0, 'Week File name of the Week you have\nto finish for Unlocking:'));
@@ -310,8 +308,8 @@ class WeekEditorState extends MusicBeatState
 
 		var isMissing:Bool = true;
 		if(assetName != null && assetName.length > 0) {
-			if(Assets.exists(Paths.image('menubackgrounds/menu_' + assetName), IMAGE)) 
-			{
+			if( #if MODS_ALLOWED FileSystem.exists(Paths.modsImages('menubackgrounds/menu_' + assetName)) || #end
+			Assets.exists(Paths.image('menubackgrounds/menu_' + assetName), IMAGE)) {
 				bgSprite.loadGraphic(Paths.image('menubackgrounds/menu_' + assetName));
 				isMissing = false;
 			}
@@ -329,8 +327,8 @@ class WeekEditorState extends MusicBeatState
 		
 		var isMissing:Bool = true;
 		if(assetName != null && assetName.length > 0) {
-			if(Assets.exists(Paths.image('storymenu/' + assetName), IMAGE)) 
-			{
+			if( #if MODS_ALLOWED FileSystem.exists(Paths.modsImages('storymenu/' + assetName)) || #end
+			Assets.exists(Paths.image('storymenu/' + assetName), IMAGE)) {
 				weekThing.loadGraphic(Paths.image('storymenu/' + assetName));
 				isMissing = false;
 			}
@@ -421,8 +419,7 @@ class WeekEditorState extends MusicBeatState
 			FlxG.sound.muteKeys = TitleState.muteKeys;
 			FlxG.sound.volumeDownKeys = TitleState.volumeDownKeys;
 			FlxG.sound.volumeUpKeys = TitleState.volumeUpKeys;
-
-			if(FlxG.keys.justPressed.ESCAPE #if mobileC || _virtualpad.buttonA.justPressed #end) {
+			if(FlxG.keys.justPressed.ESCAPE) {
 				FlxG.mouse.visible = false;
 				MusicBeatState.switchState(new editors.MasterEditorMenu());
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
@@ -441,14 +438,14 @@ class WeekEditorState extends MusicBeatState
 	}
 
 	private static var _file:FileReference;
-	//public static function loadWeek() {
-		//var jsonFilter:FileFilter = new FileFilter('JSON', 'json');
-		//_file = new FileReference();
-		//_file.addEventListener(Event.SELECT, onLoadComplete);
-		//_file.addEventListener(Event.CANCEL, onLoadCancel);
-		//_file.addEventListener(IOErrorEvent.IO_ERROR, onLoadError);
-		//_file.browse([jsonFilter]);
-	//}
+	public static function loadWeek() {
+		var jsonFilter:FileFilter = new FileFilter('JSON', 'json');
+		_file = new FileReference();
+		_file.addEventListener(Event.SELECT, onLoadComplete);
+		_file.addEventListener(Event.CANCEL, onLoadCancel);
+		_file.addEventListener(IOErrorEvent.IO_ERROR, onLoadError);
+		_file.browse([jsonFilter]);
+	}
 	
 	public static var loadedWeek:WeekFile = null;
 	public static var loadError:Bool = false;
@@ -458,7 +455,33 @@ class WeekEditorState extends MusicBeatState
 		_file.removeEventListener(Event.CANCEL, onLoadCancel);
 		_file.removeEventListener(IOErrorEvent.IO_ERROR, onLoadError);
 
+		#if sys
+		var fullPath:String = null;
+		var jsonLoaded = cast Json.parse(Json.stringify(_file)); //Exploit(???) for accessing a private variable
+		if(jsonLoaded.__path != null) fullPath = jsonLoaded.__path; //I'm either a genious or dangerously dumb
+
+		if(fullPath != null) {
+			var rawJson:String = File.getContent(fullPath);
+			if(rawJson != null) {
+				loadedWeek = cast Json.parse(rawJson);
+				if(loadedWeek.weekCharacters != null && loadedWeek.weekName != null) //Make sure it's really a week
+				{
+					var cutName:String = _file.name.substr(0, _file.name.length - 5);
+					trace("Successfully loaded file: " + cutName);
+					loadError = false;
+
+					weekFileName = cutName;
+					_file = null;
+					return;
+				}
+			}
+		}
+		loadError = true;
+		loadedWeek = null;
+		_file = null;
+		#else
 		trace("File couldn't be loaded! You aren't on Desktop, are you?");
+		#end
 	}
 
 	/**
@@ -487,9 +510,6 @@ class WeekEditorState extends MusicBeatState
 
 	public static function saveWeek(weekFile:WeekFile) {
 		var data:String = Json.stringify(weekFile, "\t");
-
-		openfl.system.System.setClipboard(data.trim());
-
 		if (data.length > 0)
 		{
 			_file = new FileReference();
@@ -580,11 +600,6 @@ class WeekEditorFreeplayState extends MusicBeatState
 
 		addEditorBox();
 		changeSelection();
-
-		#if mobileC
-		addVirtualPad(UP_DOWN, A);
-		#end
-
 		super.create();
 	}
 	
@@ -607,6 +622,13 @@ class WeekEditorFreeplayState extends MusicBeatState
 		var blackBlack:FlxSprite = new FlxSprite(0, 670).makeGraphic(FlxG.width, 50, FlxColor.BLACK);
 		blackBlack.alpha = 0.6;
 		add(blackBlack);
+
+		var loadWeekButton:FlxButton = new FlxButton(0, 685, "Load Week", function() {
+			WeekEditorState.loadWeek();
+		});
+		loadWeekButton.screenCenter(X);
+		loadWeekButton.x -= 120;
+		add(loadWeekButton);
 		
 		var storyModeButton:FlxButton = new FlxButton(0, 685, "Story Mode", function() {
 			MusicBeatState.switchState(new WeekEditorState(weekFile));
@@ -672,7 +694,6 @@ class WeekEditorFreeplayState extends MusicBeatState
 		});
 
 		iconInputText = new FlxUIInputText(10, bgColorStepperR.y + 70, 100, '', 8);
-		iconInputText.focusGained = () -> FlxG.stage.window.textInputEnabled = true;		
 
 		var hideFreeplayCheckbox:FlxUICheckBox = new FlxUICheckBox(10, iconInputText.y + 30, null, null, "Hide Week from Freeplay?", 100);
 		hideFreeplayCheckbox.checked = weekFile.hideFreeplay;
@@ -761,7 +782,7 @@ class WeekEditorFreeplayState extends MusicBeatState
 			FlxG.sound.muteKeys = TitleState.muteKeys;
 			FlxG.sound.volumeDownKeys = TitleState.volumeDownKeys;
 			FlxG.sound.volumeUpKeys = TitleState.volumeUpKeys;
-			if(FlxG.keys.justPressed.ESCAPE #if mobileC || _virtualpad.buttonA.justPressed #end) {
+			if(FlxG.keys.justPressed.ESCAPE) {
 				FlxG.mouse.visible = false;
 				MusicBeatState.switchState(new editors.MasterEditorMenu());
 				FlxG.sound.playMusic(Paths.music('freakyMenu'));
